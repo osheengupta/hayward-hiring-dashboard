@@ -380,7 +380,14 @@ def calculate():
     ot_pct = float(data.get('ot_pct', 0))
     department = data.get('department', 'fire')
 
-    roles = get_department_data(department)
+    if department == 'both':
+        # Combine both departments
+        police_roles = get_department_data('police')
+        fire_roles = get_department_data('fire')
+        roles = police_roles + fire_roles
+    else:
+        roles = get_department_data(department)
+
     results = calculate_scenario(roles, new_hire_pct, ot_pct)
     return jsonify(results)
 

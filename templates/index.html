@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Police & Fire Hiring Scenarios - City of Hayward</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <style>
         * {
             margin: 0;
@@ -164,6 +165,85 @@
             color: white;
         }
 
+        .info-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-left: 8px;
+            vertical-align: middle;
+            transition: all 0.3s;
+        }
+
+        .info-btn:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .ot-display-box {
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .ot-display-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .info-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .info-modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+        }
+
+        .info-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .info-modal-header h2 {
+            color: #667eea;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
         .refresh-btn {
             padding: 10px 20px;
             border: 2px solid #11998e;
@@ -316,6 +396,7 @@
             <div class="department-selector">
                 <button class="dept-btn" id="policeBtn" onclick="selectDepartment('police')">Police Department</button>
                 <button class="dept-btn active" id="fireBtn" onclick="selectDepartment('fire')">Fire Department</button>
+                <button class="dept-btn" id="bothBtn" onclick="selectDepartment('both')">Both Departments</button>
             </div>
 
             <div class="controls-section">
@@ -327,7 +408,10 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="newHireSlider">New Hiring Percentage (Replace OT with New Hires)</label>
+                    <label for="newHireSlider">
+                        New Hiring Percentage (Replace OT with New Hires)
+                        <button class="info-btn" onclick="showInfo()" title="Click for more information">ℹ️</button>
+                    </label>
                     <div class="slider-container">
                         <input type="range" id="newHireSlider" min="0" max="100" value="60" step="5">
                         <span class="value-display" id="newHireValue">60%</span>
@@ -335,10 +419,9 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="otSlider">Overtime Percentage (Remaining OT Budget)</label>
-                    <div class="slider-container">
-                        <input type="range" id="otSlider" min="0" max="100" value="40" step="5">
-                        <span class="value-display" id="otValue">40%</span>
+                    <label>Overtime Percentage (Auto-calculated)</label>
+                    <div class="ot-display-box">
+                        <span class="ot-display-value" id="otValue">40%</span>
                     </div>
                 </div>
 
@@ -372,8 +455,8 @@
                                 <th>Original OT Pay</th>
                                 <th>New Hire Cost</th>
                                 <th>Cost with Pension</th>
-                                <th>Salary Saving</th>
                                 <th>Extra OT Cost</th>
+                                <th>Total Cost</th>
                                 <th>Net Savings</th>
                             </tr>
                         </thead>
@@ -382,6 +465,40 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="info-modal">
+        <div class="info-modal-content">
+            <div class="info-modal-header">
+                <h2>About the Hiring Percentage Slider</h2>
+                <button class="close-btn" onclick="closeInfo()">&times;</button>
+            </div>
+            <div>
+                <h3 style="color: #667eea; margin-top: 0;">What does this slider do?</h3>
+                <p>This slider lets you adjust the percentage of overtime hours that will be replaced by hiring new full-time employees.</p>
+
+                <h3 style="color: #667eea;">How to use it:</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>0%</strong> - No new hires, continue with 100% overtime</li>
+                    <li><strong>50%</strong> - Replace half of overtime with new hires, keep 50% as overtime</li>
+                    <li><strong>100%</strong> - Replace all overtime with new full-time employees</li>
+                </ul>
+
+                <h3 style="color: #667eea;">What happens when you adjust it?</h3>
+                <p>The dashboard automatically calculates:</p>
+                <ul style="line-height: 1.8;">
+                    <li>How many new employees are needed</li>
+                    <li>The cost of hiring those employees (including pension)</li>
+                    <li>The remaining overtime costs</li>
+                    <li>The total savings or additional costs</li>
+                </ul>
+
+                <p style="margin-top: 20px; padding: 15px; background: #f0f4ff; border-left: 4px solid #667eea; border-radius: 5px;">
+                    <strong>💡 Tip:</strong> Use the preset scenario buttons below the slider to quickly compare common hiring strategies!
+                </p>
             </div>
         </div>
     </div>
@@ -420,10 +537,16 @@
             // Update button states
             document.getElementById('policeBtn').classList.toggle('active', dept === 'police');
             document.getElementById('fireBtn').classList.toggle('active', dept === 'fire');
+            document.getElementById('bothBtn').classList.toggle('active', dept === 'both');
 
             // Update results title
-            const deptName = dept.charAt(0).toUpperCase() + dept.slice(1);
-            document.getElementById('resultsTitle').textContent = `Results - ${deptName} Department`;
+            let deptName = '';
+            if (dept === 'both') {
+                deptName = 'Combined Police & Fire Departments';
+            } else {
+                deptName = dept.charAt(0).toUpperCase() + dept.slice(1) + ' Department';
+            }
+            document.getElementById('resultsTitle').textContent = `Results - ${deptName}`;
 
             // Recalculate with current sliders
             calculateScenario();
@@ -440,7 +563,6 @@
 
         function setScenario(newHire, ot) {
             document.getElementById('newHireSlider').value = newHire;
-            document.getElementById('otSlider').value = ot;
             document.getElementById('newHireValue').textContent = newHire + '%';
             document.getElementById('otValue').textContent = ot + '%';
             calculateScenario();
@@ -448,7 +570,7 @@
 
         async function calculateScenario() {
             const newHirePct = parseFloat(document.getElementById('newHireSlider').value);
-            const otPct = parseFloat(document.getElementById('otSlider').value);
+            const otPct = 100 - newHirePct; // Auto-calculate OT percentage
 
             try {
                 const response = await fetch('/api/calculate', {
@@ -492,10 +614,13 @@
         function updateUI(data) {
             updateSummaryCards(data.totals);
             updateChart(data);
-            updateTable(data.roles);
+            updateTable(data.roles, data.totals);
         }
 
         function updateSummaryCards(totals) {
+            // Calculate total cost: New Hire Cost (with Pension) + Extra OT Cost
+            const totalCost = totals.total_new_hire_with_pension + totals.total_extra_ot_cost;
+
             const cardsHTML = `
                 <div class="summary-card">
                     <h3>Original OT Cost</h3>
@@ -506,12 +631,12 @@
                     <div class="value">${formatCurrency(totals.total_new_hire_with_pension)}</div>
                 </div>
                 <div class="summary-card">
-                    <h3>Salary Savings</h3>
-                    <div class="value">${formatCurrency(totals.total_salary_saving)}</div>
-                </div>
-                <div class="summary-card">
                     <h3>Extra OT Cost</h3>
                     <div class="value">${formatCurrency(totals.total_extra_ot_cost)}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Cost</h3>
+                    <div class="value">${formatCurrency(totalCost)}</div>
                 </div>
                 <div class="summary-card ${totals.total_net_savings >= 0 ? 'positive' : 'negative'}">
                     <h3>Net Savings</h3>
@@ -526,8 +651,9 @@
 
             const roles = data.roles.map(r => r.role);
             const originalOT = data.roles.map(r => r.original_ot_pay);
-            const newHireCost = data.roles.map(r => r.cost_with_pension);
-            const netSavings = data.roles.map(r => r.net_savings);
+            const extraOT = data.roles.map(r => r.extra_ot_cost);
+            // Calculate total cost for each role: cost_with_pension + extra_ot_cost
+            const totalCost = data.roles.map(r => r.cost_with_pension + r.extra_ot_cost);
 
             if (chart) {
                 chart.destroy();
@@ -538,22 +664,22 @@
                 data: {
                     labels: roles,
                     datasets: [{
-                        label: 'Original OT Pay',
+                        label: 'Original OT Paid',
                         data: originalOT,
                         backgroundColor: 'rgba(235, 51, 73, 0.7)',
                         borderColor: 'rgba(235, 51, 73, 1)',
                         borderWidth: 2
                     }, {
-                        label: 'New Hire Cost (with Pension)',
-                        data: newHireCost,
-                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
+                        label: 'Extra OT Cost',
+                        data: extraOT,
+                        backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
                         borderWidth: 2
                     }, {
-                        label: 'Net Savings',
-                        data: netSavings,
-                        backgroundColor: 'rgba(17, 153, 142, 0.7)',
-                        borderColor: 'rgba(17, 153, 142, 1)',
+                        label: 'Total Cost',
+                        data: totalCost,
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
                         borderWidth: 2
                     }]
                 },
@@ -570,6 +696,23 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        datalabels: {
+                            display: true,
+                            color: 'white',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            formatter: function(value, context) {
+                                // Show % drop only on Total Cost bars
+                                if (context.datasetIndex === 2) {
+                                    const originalValue = originalOT[context.dataIndex];
+                                    const percentDrop = ((originalValue - value) / originalValue * 100).toFixed(1);
+                                    return percentDrop > 0 ? `${percentDrop}% ↓` : `${Math.abs(percentDrop)}% ↑`;
+                                }
+                                return '';
+                            }
                         }
                     },
                     scales: {
@@ -586,9 +729,19 @@
             });
         }
 
-        function updateTable(roles) {
+        function updateTable(roles, totals) {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = roles.map(role => `
+
+            // Calculate totals for the table
+            const totalVacancies = roles.reduce((sum, role) => sum + role.vacancies, 0);
+            const totalEmployeesNeeded = roles.reduce((sum, role) => sum + role.employees_needed, 0);
+            const totalCostValue = totals.total_new_hire_with_pension + totals.total_extra_ot_cost;
+
+            tbody.innerHTML = roles.map(role => {
+                // Calculate total cost for each role
+                const totalCost = role.cost_with_pension + role.extra_ot_cost;
+
+                return `
                 <tr>
                     <td><strong>${role.role}</strong></td>
                     <td>${role.vacancies}</td>
@@ -596,23 +749,55 @@
                     <td>${formatCurrency(role.original_ot_pay)}</td>
                     <td>${formatCurrency(role.cost_ft_employees)}</td>
                     <td>${formatCurrency(role.cost_with_pension)}</td>
-                    <td class="positive-value">${formatCurrency(role.salary_saving)}</td>
                     <td>${formatCurrency(role.extra_ot_cost)}</td>
+                    <td>${formatCurrency(totalCost)}</td>
                     <td class="${role.net_savings >= 0 ? 'positive-value' : 'negative-value'}">
                         ${formatCurrency(role.net_savings)}
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('') + `
+                <tr style="background-color: #2c3e50; color: white; font-weight: bold; border-top: 3px solid #667eea;">
+                    <td><strong>TOTAL</strong></td>
+                    <td>${totalVacancies}</td>
+                    <td>${totalEmployeesNeeded}</td>
+                    <td>${formatCurrency(totals.total_original_ot)}</td>
+                    <td>${formatCurrency(totals.total_new_hire_cost)}</td>
+                    <td>${formatCurrency(totals.total_new_hire_with_pension)}</td>
+                    <td>${formatCurrency(totals.total_extra_ot_cost)}</td>
+                    <td>${formatCurrency(totalCostValue)}</td>
+                    <td class="${totals.total_net_savings >= 0 ? 'positive-value' : 'negative-value'}">
+                        ${formatCurrency(totals.total_net_savings)}
+                    </td>
+                </tr>
+            `;
         }
 
-        // Event listeners
-        document.getElementById('newHireSlider').addEventListener('input', function(e) {
-            document.getElementById('newHireValue').textContent = e.target.value + '%';
-            calculateScenario();
-        });
+        // Info modal functions
+        function showInfo() {
+            document.getElementById('infoModal').style.display = 'block';
+        }
 
-        document.getElementById('otSlider').addEventListener('input', function(e) {
-            document.getElementById('otValue').textContent = e.target.value + '%';
+        function closeInfo() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('infoModal');
+            if (event.target == modal) {
+                closeInfo();
+            }
+        }
+
+        // Event listener for the slider
+        document.getElementById('newHireSlider').addEventListener('input', function(e) {
+            const newHireValue = parseInt(e.target.value);
+            const otValue = 100 - newHireValue;
+
+            document.getElementById('newHireValue').textContent = newHireValue + '%';
+            document.getElementById('otValue').textContent = otValue + '%';
+
             calculateScenario();
         });
 
